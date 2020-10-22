@@ -55,6 +55,10 @@ module.exports = appInfo => {
       underscored: true
     }
   };
+  //加入一个随机的密钥
+  config.crypto = {
+    secret: 'qhdgw@45ncashdaksh2!#@3nxjdas*_672'
+  };
 
   // add your user config here
   const userConfig = {
