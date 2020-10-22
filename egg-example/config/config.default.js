@@ -24,14 +24,14 @@ module.exports = appInfo => {
       enable: false,
     },
     // 跨域白名单
-    domainWhiteList: [ 'http://localhost:3000' ],
+    domainWhiteList: ['http://localhost:3000'],
   };
-   // 允许跨域的方法
+  // 允许跨域的方法
   config.cors = {
     origin: '*',
     allowMethods: 'GET, PUT, POST, DELETE, PATCH'
   };
-  
+
   config.sequelize = {
     dialect: 'mysql',
     host: '127.0.0.1',
@@ -58,7 +58,8 @@ module.exports = appInfo => {
 
   // add your user config here
   const userConfig = {
-    // myAppName: 'egg',
+    locale: 'zh-cn',
+    throwError: true,
   };
 
   return {
