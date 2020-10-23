@@ -69,12 +69,21 @@ module.exports = appInfo => {
       db: 1,
     },
   };
+  //jwt配置
+  config.jwt = {
+    secret: 'qhdgw@45ncashdaksh2!#@3nxjdas*_672',
+  };
 
   // add your user config here
   const userConfig = {
     locale: 'zh-cn',
     throwError: true,
   };
+
+  //这些端点的请求需要token鉴权
+  config.auth = {
+    match: ['/logout', '/upload', '/getSize', '/file', '/share'],
+  }
 
   return {
     ...config,
