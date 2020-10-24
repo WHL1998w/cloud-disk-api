@@ -86,5 +86,19 @@ module.exports = (app) => {
             })
         }
     })
+
+    // 监听批量删除
+    File.afterBulkDestroy(async (data, option) => {
+        console.log('批量删除后', data.where.id);
+        if (data.where.id) {
+            app.model.File.destroy({
+                where: {
+                    file_id: data.where.id,
+                    user_id: data.where.user_id,
+                }
+            })
+        }
+    });
+
     return File
 }

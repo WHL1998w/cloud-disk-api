@@ -225,7 +225,7 @@ class FileController extends Controller {
         let res = await f.save()
         ctx.apiSuccess(res)
     }
-    //批量删除文件
+    //批量删除文件功能实现
     async delete() {
         const { ctx, app } = this;
         const user_id = ctx.authUser.id;
