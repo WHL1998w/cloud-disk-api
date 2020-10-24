@@ -263,7 +263,7 @@ class FileController extends Controller {
         }
         ctx.apiSuccess(res);
     }
-    //搜索文件
+    //搜索文件功能实现
     async search() {
         const { ctx, app } = this;
         const user_id = ctx.authUser.id;
