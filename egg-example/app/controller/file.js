@@ -184,7 +184,7 @@ class FileController extends Controller {
         })
         ctx.apiSuccess(res)
     }
-    //重命名
+    //重命名功能实现
     async rename() {
         const {
             ctx,
