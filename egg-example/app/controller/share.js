@@ -41,6 +41,22 @@ class ShareController extends Controller {
         let url = 'http://127.0.0.1:7001/sharepage/' + shareurl
         ctx.apiSuccess('分享链接：' + url)
     }
+    //我的分享列表
+    async list() {
+        const { ctx, app } = this
+        const user_id = ctx.authUser.id
+        let list = await app.model.Share.findAndCountAll({
+            where: {
+                user_id,
+            },
+            include: [
+                {
+                    model: app.model.File,
+                }
+            ]
+        })
+        ctx.apiSuccess(list)
+    }
 }
 
 module.exports = ShareController
