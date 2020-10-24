@@ -91,7 +91,7 @@ class FileController extends Controller {
 
         ctx.apiFail('上传失败')
     }
-    //文件列表
+    //文件列表实现
     async list() {
         const {
             ctx,
