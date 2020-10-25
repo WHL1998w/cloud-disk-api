@@ -8,13 +8,8 @@ const path = require('path')
 class FileController extends Controller {
     // 上传
     async upload() {
-        const {
-            ctx,
-            app,
-            service
-        } = this
+        const { ctx, app, service } = this
         const currentUser = ctx.authUser
-
         console.log(ctx.request.files)
 
         if (!ctx.request.files) {
@@ -30,21 +25,27 @@ class FileController extends Controller {
             },
         })
 
-        const file_id = ctx.query.file_id
-        console.log(file_id + '&&&&&&&&&')
-        let f
-        // 目录id是否存在
-        if (file_id > 0) {
-            // 目录是否存在,存在就返回目录对象，从而取得目录名字，不存在直接在service就出错返回了
-            await service.file.isDirExist(file_id).then((res) => {
-                console.log(res + '>>>>>>>>>>')
-                f = res
-            })
-        }
-        //取得上传的文件对象
         const file = ctx.request.files[0]
-        //动态将目录名称作为前缀和文件名拼接
-        const name = f.name + '/' + ctx.genID(10) + path.extname(file.filename)
+
+        const file_id = ctx.query.file_id
+        console.log(file_id + '<<<<<<<<<<')
+
+        //处理上传非根目录的情况
+        let prefixPath = ''
+        //根据file_id一直向上找到顶层目录
+        if (file_id > 0) {
+            const prefixPath = await service.file.seachDir(file_id)
+            console.log(prefixPath);
+        }
+
+        //处理传根目录的情况
+        if (file_id === 0) {
+            prefixPath = '/'
+        }
+
+        // 拼接出最终文件上传目录
+        const name = prefixPath + ctx.genID(10) + path.extname(file.filename)
+
 
         // 判断用户网盘内存是否不足
         let s = await new Promise((resolve, reject) => {
@@ -65,7 +66,6 @@ class FileController extends Controller {
             console.log(err)
         }
 
-        //得到文件url
         console.log(result.url)
 
         // 写入到数据表
@@ -78,7 +78,7 @@ class FileController extends Controller {
                 user_id: currentUser.id,
                 size: parseInt(s),
                 isdir: 0,
-                url: result.url,
+                url: result.url.replace('http', 'https'),
             }
             let res = await app.model.File.create(addData)
 
@@ -91,7 +91,8 @@ class FileController extends Controller {
 
         ctx.apiFail('上传失败')
     }
-    //文件列表实现
+
+    //文件列表
     async list() {
         const {
             ctx,
@@ -146,7 +147,7 @@ class FileController extends Controller {
             rows,
         })
     }
-    //创建文件夹实现
+    //创建文件夹
     async createdir() {
         const {
             ctx,
@@ -184,7 +185,7 @@ class FileController extends Controller {
         })
         ctx.apiSuccess(res)
     }
-    //重命名功能实现
+    //重命名
     async rename() {
         const {
             ctx,
@@ -225,7 +226,7 @@ class FileController extends Controller {
         let res = await f.save()
         ctx.apiSuccess(res)
     }
-    //批量删除文件功能实现
+    //批量删除文件
     async delete() {
         const { ctx, app } = this;
         const user_id = ctx.authUser.id;
@@ -263,7 +264,7 @@ class FileController extends Controller {
         }
         ctx.apiSuccess(res);
     }
-    //搜索文件功能实现
+    //搜索文件
     async search() {
         const { ctx, app } = this;
         const user_id = ctx.authUser.id;
@@ -288,91 +289,6 @@ class FileController extends Controller {
         ctx.apiSuccess({
             rows
         })
-    }
-
-    //保存到自己的网盘
-    async saveToSelf() {
-        const { ctx, app, service } = this;
-        let current_user_id = ctx.authUser.id
-
-        ctx.validate({
-            dir_id: {
-                type: "int",
-                required: true,
-                desc: "目录ID"
-            },
-            sharedurl: {
-                type: "string",
-                required: true,
-                desc: "分享标识"
-            },
-        })
-
-        let { dir_id, sharedurl } = ctx.request.body
-
-        // 分享是否存在
-        let s = await service.share.isExist(sharedurl, {
-            include: [{
-                model: app.model.File
-            }]
-        })
-
-        if (s.user_id === current_user_id) {
-            return ctx.apiSuccess('本人分享，无需保存')
-        }
-
-        // 文件是否存在
-        if (dir_id > 0) {
-            await service.file.isDirExist(dir_id)
-        }
-
-        // 查询该分享目录下的所有数据
-        let getAllFile = async (obj, dirId) => {
-            let data = {
-                name: obj.name,
-                ext: obj.ext,
-                md: obj.md,
-                file_id: dirId,
-                user_id: current_user_id,
-                size: obj.size,
-                isdir: obj.isdir,
-                url: obj.url,
-            }
-
-            // 判断当前用户剩余空间
-            if ((ctx.authUser.total_size - ctx.authUser.used_size) < data.size) {
-                return ctx.throw(400, '你的可用内存不足');
-            }
-
-            // 直接创建
-            let o = await app.model.File.create(data)
-
-            // 更新user表的使用内存
-            ctx.authUser.used_size = ctx.authUser.used_size + parseInt(data.size);
-            await ctx.authUser.save();
-
-            // 目录
-            if (obj.isdir) {
-                // 继续查询下面其他的数据
-                let rows = await app.model.File.findAll({
-                    where: {
-                        user_id: obj.user_id,
-                        file_id: obj.id,
-                    }
-                });
-
-                rows.forEach((item) => {
-                    getAllFile(item, o.id)
-                })
-
-                return
-            }
-        }
-
-        await getAllFile(s.file, dir_id)
-
-        ctx.apiSuccess('ok')
-
     }
 }
 
